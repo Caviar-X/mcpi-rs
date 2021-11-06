@@ -23,7 +23,7 @@ pub fn decode_xyz(encoded : String) {
     let mut ret : (i32,i32,i32) = (0,0,0);
     let mut cnt = 0;
     for i in encoded.split("\\,") {
-        if i == "" || i == " " || i == "\n"  {
+        if i.is_empty() || i == " " || i == "\n"  {
             continue;
         }
         match cnt {

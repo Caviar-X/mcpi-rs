@@ -107,10 +107,10 @@ impl Block {
         }
     }
     pub fn decode(s : String) -> Block{
-        return if s.find(",").is_none() {
+        return if !s.contains(',') {
             Block::new_without_data(Id(s.split_whitespace().collect::<Vec<&str>>()[0].parse::<u32>().expect("Failed to parse")))
         } else {
-            let vec = s.split(",").collect::<Vec<&str>>();
+            let vec = s.split(',').collect::<Vec<&str>>();
             let id = Id(vec[0].parse::<u32>().expect("Failed to parse"));
             let data = vec[1].parse::<i32>().expect("Failed to parse");
             Block::new(data, id)

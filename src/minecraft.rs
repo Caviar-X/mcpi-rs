@@ -52,7 +52,7 @@ pub struct Minecraft {
 /// ```
 pub fn pos_decode(pos_str : impl ToString) -> (f64,f64,f64) {
     let s = pos_str.to_string();
-    let vec = s.split(",").collect::<Vec<&str>>();
+    let vec = s.split(',').collect::<Vec<&str>>();
     (vec[0].parse().expect("Failed to parse1"),vec[1].parse().expect("Failed to parse2"),vec[2].split_whitespace().collect::<Vec<&str>>()[0].parse().expect("Failed to parse3"))
 }
 /// convert a string to (i32,i32,i32)
@@ -71,7 +71,7 @@ pub fn pos_decode(pos_str : impl ToString) -> (f64,f64,f64) {
 /// ```
 pub fn pos_decode_int(pos_str : impl ToString) -> (i32,i32,i32) {
     let s = pos_str.to_string().replace("\n","");
-    let vec = s.split(",").collect::<Vec<&str>>();
+    let vec = s.split(',').collect::<Vec<&str>>();
     (vec[0].parse().expect("Failed to parse1"),vec[1].parse().expect("Failed to parse 2"),vec[2].parse().expect("Failed to parse 3"))
 }
 /// convert a tuple with 3 params to string
@@ -139,7 +139,7 @@ impl Minecraft {
     /// ```
     pub fn mc_get_block(self,pos : (i32,i32,i32)) -> Block{
         self.clone().connection.send(vec!["world.getBlock",pos_to_string(pos).as_str()]);
-        Block::decode(self.clone().connection.receive())
+        Block::decode(self.connection.receive())
     }
     /// update a data of a block in a position
     /// # Example
@@ -155,7 +155,7 @@ impl Minecraft {
     /// assert_eq!(mc.clone().mc_get_block((1,2,3)),Block::from_item(STONE));
     /// ```
     pub fn mc_set_block(self,pos : (i32,i32,i32),block : Block) {
-        self.clone().connection.send_s(format!("world.setBlock({},{},{},{})",pos.0,pos.1,pos.2,block.to_string()));
+        self.connection.send_s(format!("world.setBlock({},{},{},{})",pos.0,pos.1,pos.2,block.to_string()));
     }
     /// update the data of the block from pos_begin to pos_end
     ///
@@ -172,7 +172,7 @@ impl Minecraft {
     /// assert_eq!(mc.clone().mc_get_block((12,13,15)),Block::from_item(STONE));
     /// ```
     pub fn mc_set_blocks(self,pos_begin : (i32,i32,i32),pos_end : (i32,i32,i32),block : Block) {
-        self.clone().connection.send_s(format!("world.setBlocks({},{},{})",pos_to_string(pos_begin),pos_to_string(pos_end),block.to_string()));
+        self.connection.send_s(format!("world.setBlocks({},{},{})",pos_to_string(pos_begin),pos_to_string(pos_end),block.to_string()));
     }
     /// get the height of the world
     /// # Example
@@ -187,7 +187,7 @@ impl Minecraft {
     /// ```
     pub fn mc_get_pos_y(self,x : i32,z : i32) -> i32{
         self.clone().connection.send(vec!["world.getHeight",x.to_string().as_str(),z.to_string().as_str()]);
-        self.clone().connection.receive().split_whitespace().collect::<Vec<&str>>()[0].parse().unwrap()
+        self.connection.receive().split_whitespace().collect::<Vec<&str>>()[0].parse().unwrap()
     }
     /// send a message to minecraft
     ///
@@ -239,11 +239,11 @@ impl Minecraft {
     /// ```
     pub fn mc_get_pos(self) -> (f64,f64,f64) {
         self.clone().connection.send_s("player.getPos()");
-        pos_decode(self.clone().connection.receive())
+        pos_decode(self.connection.receive())
     }
     pub fn mc_get_pos_int(self) -> (i32,i32,i32) {
         self.clone().connection.send_s("player.getTile()");
-        let receive = self.clone().connection.receive();
+        let receive = self.connection.receive();
         let pos_exact = pos_decode_int(receive);
         (pos_exact.0 as i32,pos_exact.1 as i32,pos_exact.2 as i32)
     }
@@ -258,7 +258,7 @@ impl Minecraft {
     }
     pub fn mc_get_pos_entity_int(self,id : i32) -> (i32,i32,i32) {
         self.clone().connection.send(vec!["entity.getTile",id.to_string().as_str()]);
-        let pos = pos_decode(self.clone().connection.receive());
+        let pos = pos_decode(self.connection.receive());
         (pos.0 as i32,pos.1 as i32,pos.2 as i32)
     }
     pub fn mc_set_pos_entity_int(self,id : i32,pos : (i32,i32,i32)) {
@@ -266,7 +266,7 @@ impl Minecraft {
     }
     pub fn mc_get_pos_entity(self,id : i32) -> (f64,f64,f64) {
         self.clone().connection.send(vec!["entity.getPos",id.to_string().as_str()]);
-        pos_decode(self.clone().connection.receive())
+        pos_decode(self.connection.receive())
     }
     pub fn mc_set_pos_entity(self,id : i32,pos : (f64,f64,f64)) {
         self.connection.send(vec!["entity.setPos",id.to_string().as_str(),pos_to_string(pos).as_str()]);
