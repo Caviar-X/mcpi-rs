@@ -108,7 +108,7 @@ impl Block {
     }
     pub fn decode(s : String) -> Block{
         return if s.find(",").is_none() {
-            Block::new_without_data(Id(s.clone().split_whitespace().collect::<Vec<&str>>()[0].parse::<u32>().expect("Failed to parse")))
+            Block::new_without_data(Id(s.split_whitespace().collect::<Vec<&str>>()[0].parse::<u32>().expect("Failed to parse")))
         } else {
             let vec = s.split(",").collect::<Vec<&str>>();
             let id = Id(vec[0].parse::<u32>().expect("Failed to parse"));

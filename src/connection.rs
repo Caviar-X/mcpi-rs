@@ -1,6 +1,20 @@
+//! The connection module of mcpi-rs
+//! set a connection between minecraft and mcpi-rs
+//!
+//! # Example
+//!
+//! ```
+//! use mcpi_rs::prelude::*;
+//! use std::net::{SocketAddr, Ipv4Addr, IpAddr};
+//!
+//! let mut conn = Connection::new(SocketAddr::new(IpAddr::V4(Ipv4Addr(127,0,0,1)),1000));
+//!
+//! conn.send_s("Hello World");
+//! ```
 use std::net::{TcpStream, ToSocketAddrs, Shutdown};
 use std::io::{Read, Write, BufReader, BufRead};
 use std::fmt::Display;
+/// The connection struct
 pub struct Connection {
     socket : TcpStream,
     auto_flush: bool
@@ -9,15 +23,24 @@ impl Clone for Connection {
     fn clone(&self) -> Self {
         Connection {
             socket : self.socket.try_clone().expect("Failed to clone"),
-            auto_flush: self.auto_flush.clone()
+            auto_flush: self.auto_flush
         }
     }
     fn clone_from(&mut self, source: &Self) {
         self.socket = source.socket.try_clone().expect("Failed to clone");
-        self.auto_flush = source.auto_flush.clone();
+        self.auto_flush = source.auto_flush;
     }
 }
 impl Connection {
+    /// construct a connection
+    ///
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// use std::net::{SocketAddr, Ipv4Addr, IpAddr};
+    ///
+    /// let mut conn = Connection::new(SocketAddr::new(IpAddr::V4(Ipv4Addr(127,0,0,1)),1000));
+    /// ```
     pub fn new<A : ToSocketAddrs>(address : A) -> Connection {
         Connection {
             socket : TcpStream::connect(address).expect("Couldn't connect to Minecraft, is it running?"),
@@ -25,32 +48,30 @@ impl Connection {
         }
     }
     pub fn send<T : Display>(self,parts : Vec<T>) {
-        let mut cnt = 0;
-        for i in &parts {
-            self.clone().socket.write(i.to_string().as_bytes()).expect("Failed to write from socket");
+        for (cnt,i) in parts.iter().enumerate() {
+            self.clone().socket.write_all(i.to_string().as_bytes()).expect("Failed to write from socket");
             if cnt == 0 {
-                self.clone().socket.write("(".as_bytes()).expect("Failed to write from socket");
+                self.clone().socket.write_all("(".as_bytes()).expect("Failed to write from socket");
             }
             else if cnt < parts.len() - 1 {
-                self.clone().socket.write(",".as_bytes()).expect("Failed to write from socket");
+                self.clone().socket.write_all(",".as_bytes()).expect("Failed to write from socket");
             }
-            cnt+=1;
         }
-        self.clone().socket.write(")\n".as_bytes()).expect("Failed to write from socket");
-        if self.clone().auto_flush {
+        self.clone().socket.write_all(")\n".as_bytes()).expect("Failed to write from socket");
+        if self.auto_flush {
             self.flush();
         }
     }
     pub fn send_s<T : Display>(self,str : T) {
         self.clone().drain();
-        self.clone().socket.write(str.to_string().as_bytes()).expect("Failed to write from socket");
-        self.clone().socket.write("\n".as_bytes()).expect("Failed to write from socket");
-        if self.clone().auto_flush {
-            self.clone().flush();
+        self.clone().socket.write_all(str.to_string().as_bytes()).expect("Failed to write from socket");
+        self.clone().socket.write_all("\n".as_bytes()).expect("Failed to write from socket");
+        if self.auto_flush {
+            self.flush();
         }
     }
     pub fn drain(self) {
-        self.clone().socket.set_nonblocking(true).expect("Failed to set non-blocking mode");
+        self.socket.set_nonblocking(true).expect("Failed to set non-blocking mode");
         let mut c : [u8;1] = [0];
         while self.clone().socket.read(&mut c).is_ok() {
             eprint!("{}",c[0]);
@@ -60,8 +81,8 @@ impl Connection {
         self.socket.flush().expect("Failed to flush");
     }
     pub fn receive(self) -> String {
-        self.clone().socket.try_clone().unwrap().set_nonblocking(false).unwrap();
-        let mut b : BufReader<TcpStream> = BufReader::new(self.clone().socket.try_clone().unwrap());
+        self.socket.try_clone().unwrap().set_nonblocking(false).unwrap();
+        let mut b : BufReader<TcpStream> = BufReader::new(self.socket.try_clone().unwrap());
         let mut s = String::new();
         b.read_line(&mut s).expect("Failed to read line");
         s

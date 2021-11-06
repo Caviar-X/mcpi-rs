@@ -187,7 +187,7 @@ impl Minecraft {
     /// ```
     pub fn mc_get_pos_y(self,x : i32,z : i32) -> i32{
         self.clone().connection.send(vec!["world.getHeight",x.to_string().as_str(),z.to_string().as_str()]);
-        self.clone().connection.receive().split_whitespace().collect::<Vec<&str>>()[0].parse()
+        self.clone().connection.receive().split_whitespace().collect::<Vec<&str>>()[0].parse().unwrap()
     }
     /// send a message to minecraft
     ///
