@@ -1,12 +1,10 @@
 use std::net::{TcpStream, ToSocketAddrs, Shutdown};
-use std::io::{Read, Write};
+use std::io::{Read, Write, BufReader, BufRead};
 use std::fmt::Display;
-
 pub struct Connection {
     socket : TcpStream,
     auto_flush: bool
 }
-
 impl Clone for Connection {
     fn clone(&self) -> Self {
         Connection {
@@ -27,24 +25,18 @@ impl Connection {
         }
     }
     pub fn send<T : Display>(self,parts : Vec<T>) {
-        self.clone().drain();
-        print!("send:");
         let mut cnt = 0;
         for i in &parts {
             self.clone().socket.write(i.to_string().as_bytes()).expect("Failed to write from socket");
-            print!("{}",i.to_string());
             if cnt == 0 {
                 self.clone().socket.write("(".as_bytes()).expect("Failed to write from socket");
-                print!("(");
             }
             else if cnt < parts.len() - 1 {
                 self.clone().socket.write(",".as_bytes()).expect("Failed to write from socket");
-                print!(")");
             }
             cnt+=1;
         }
         self.clone().socket.write(")\n".as_bytes()).expect("Failed to write from socket");
-        println!(")\n");
         if self.clone().auto_flush {
             self.flush();
         }
@@ -52,6 +44,7 @@ impl Connection {
     pub fn send_s<T : Display>(self,str : T) {
         self.clone().drain();
         self.clone().socket.write(str.to_string().as_bytes()).expect("Failed to write from socket");
+        self.clone().socket.write("\n".as_bytes()).expect("Failed to write from socket");
         if self.clone().auto_flush {
             self.clone().flush();
         }
@@ -67,18 +60,11 @@ impl Connection {
         self.socket.flush().expect("Failed to flush");
     }
     pub fn receive(self) -> String {
-        let mut data : Vec<u8> = Vec::new();
-        loop {
-            let mut read : [u8;1] = [0];
-            self.clone().socket.read(&mut read).expect("Failed to read from socket");
-            if read[0] != b'\n' {
-                data.push(read[0]);
-            }
-            else {
-                break;
-            }
-        }
-        String::from_utf8(data).expect("Failed to convert Vec<u8> to string")
+        self.clone().socket.try_clone().unwrap().set_nonblocking(false).unwrap();
+        let mut b : BufReader<TcpStream> = BufReader::new(self.clone().socket.try_clone().unwrap());
+        let mut s = String::new();
+        b.read_line(&mut s).expect("Failed to read line");
+        s
     }
     pub fn close(self) {
         self.socket.shutdown(Shutdown::Both).expect("Failed to close");

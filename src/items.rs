@@ -82,7 +82,7 @@ pub const MELON: Item = Id(103);
 pub const FENCE_GATE: Item = Id(107);
 pub const GLOWING_OBSIDIAN: Item = Id(246);
 pub const NETHER_REACTOR_CORE: Item = Id(247);
-#[derive(Clone)]
+#[derive(Clone,Ord, PartialOrd, Eq, PartialEq)]
 pub struct Block {
     id : Item,
     data : i32
@@ -108,7 +108,7 @@ impl Block {
     }
     pub fn decode(s : String) -> Block{
         return if s.find(",").is_none() {
-            Block::new_without_data(Id(s.clone().parse::<u32>().expect("Failed to parse")))
+            Block::new_without_data(Id(s.clone().split_whitespace().collect::<Vec<&str>>()[0].parse::<u32>().expect("Failed to parse")))
         } else {
             let vec = s.split(",").collect::<Vec<&str>>();
             let id = Id(vec[0].parse::<u32>().expect("Failed to parse"));
