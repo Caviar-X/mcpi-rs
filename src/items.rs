@@ -1,5 +1,5 @@
 use self::Item::Id;
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq,Hash)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Item {
     Id(u32),
 }
@@ -82,33 +82,26 @@ pub const MELON: Item = Id(103);
 pub const FENCE_GATE: Item = Id(107);
 pub const GLOWING_OBSIDIAN: Item = Id(246);
 pub const NETHER_REACTOR_CORE: Item = Id(247);
-#[derive(Clone,Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Block {
-    id : Item,
-    data : i32
+    id: Item,
+    data: i32,
 }
 impl Block {
-    pub fn new(data : i32,id : Item) -> Block {
-        Block {
-            id,
-            data
-        }
+    pub fn new(data: i32, id: Item) -> Block {
+        Block { id, data }
     }
-    pub fn new_without_data(id : Item) -> Block{
-        Block {
-            id,
-            data: 0
-        }
+    pub fn new_without_data(id: Item) -> Block {
+        Block { id, data: 0 }
     }
-    pub fn from_item(id : Item) -> Block {
-        Block {
-            id,
-            data : 0
-        }
+    pub fn from_item(id: Item) -> Block {
+        Block { id, data: 0 }
     }
-    pub fn decode(s : String) -> Block{
+    pub fn decode(s: String) -> Block {
         return if !s.contains(',') {
-            Block::new_without_data(Id(s.split_whitespace().collect::<Vec<&str>>()[0].parse::<u32>().expect("Failed to parse")))
+            Block::new_without_data(Id(s.split_whitespace().collect::<Vec<&str>>()[0]
+                .parse::<u32>()
+                .expect("Failed to parse")))
         } else {
             let vec = s.split(',').collect::<Vec<&str>>();
             let id = Id(vec[0].parse::<u32>().expect("Failed to parse"));
@@ -119,6 +112,6 @@ impl Block {
 }
 impl ToString for Block {
     fn to_string(&self) -> String {
-        format!("{}",self.clone().id.unwrap())
+        format!("{}", self.clone().id.unwrap())
     }
 }
