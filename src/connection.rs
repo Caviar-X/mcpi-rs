@@ -48,6 +48,13 @@ impl Connection {
             auto_flush: true,
         }
     }
+    /// send some data to address
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// let a = Connection::new("127.0.0.1:1000");
+    /// a.send(vec!["one","two"]);
+    /// ```
     pub fn send<T: Display>(self, parts: Vec<T>) {
         for (cnt, i) in parts.iter().enumerate() {
             self.clone()
@@ -74,6 +81,13 @@ impl Connection {
             self.flush();
         }
     }
+    /// send a string to address (non-format)
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// let c = Connection::new("127.0.0.1:1000");
+    /// c.send_s("Hello World!");
+    /// ```
     pub fn send_s<T: Display>(self, str: T) {
         self.clone().drain();
         self.clone()
@@ -88,6 +102,7 @@ impl Connection {
             self.flush();
         }
     }
+    /// drains the socket of incoming data
     pub fn drain(self) {
         self.socket
             .set_nonblocking(true)
@@ -97,9 +112,18 @@ impl Connection {
             eprint!("{}", c[0]);
         }
     }
+    /// flush the stream
     pub fn flush(mut self) {
         self.socket.flush().expect("Failed to flush");
     }
+    /// receive the data of the address
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// let c = Connection::new("127.0.0.1:1000");
+    /// c.send_s("This string will let the server send back some data");
+    /// println!("receive: {}",c.receive());
+    /// ```
     pub fn receive(self) -> String {
         self.socket
             .try_clone()
@@ -111,11 +135,25 @@ impl Connection {
         b.read_line(&mut s).expect("Failed to read line");
         s
     }
+    /// close the connection
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// let c = Connection::new("127.0.0.1:1000");
+    /// // -- snip --
+    /// c.close();
+    /// ```
     pub fn close(self) {
         self.socket
             .shutdown(Shutdown::Both)
             .expect("Failed to close");
     }
+    /// switch the auto flush
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// let c = Connection::new("127.0.0.1:1000");
+    /// c.auto_flush(true);//auto setting
+    /// ```
     pub fn auto_flush(mut self, flush: bool) {
         self.auto_flush = flush;
         if flush {

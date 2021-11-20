@@ -188,7 +188,7 @@ impl Minecraft {
     ///
     /// mc.clone().mc_set_blocks((12,13,14),(12,13,16),Block::from_item(DIAMOND_ORE));
     ///
-    /// assert_eq!(mc.clone().mc_get_block((12,13,15)),Block::from_item(STONE));
+    /// assert_eq!(mc.clone().mc_get_block((12,13,15)),Block::from_item(DIAMOND_ORE));
     /// ```
     pub fn mc_set_blocks(self, pos_begin: (i32, i32, i32), pos_end: (i32, i32, i32), block: Block) {
         self.connection.send_s(format!(
@@ -206,7 +206,7 @@ impl Minecraft {
     ///
     /// let mc = Minecraft::connect();
     ///
-    ///
+    /// //I don't know where this api use.
     ///
     /// ```
     pub fn mc_get_pos_y(self, x: i32, z: i32) -> i32 {
@@ -274,20 +274,64 @@ impl Minecraft {
         self.clone().connection.send_s("player.getPos()");
         pos_decode(self.connection.receive())
     }
+    /// get the integer position of the player (**cannot use it when the server has multi players**)
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    ///
+    /// let mc = Minecraft::connect();
+    ///
+    /// mc.clone().mc_set_pos_int((10,75,30));
+    ///
+    /// assert_eq!(mc.clone().mc_get_pos_int(),(10,75,30));
+    /// ```
     pub fn mc_get_pos_int(self) -> (i32, i32, i32) {
         self.clone().connection.send_s("player.getTile()");
         let receive = self.connection.receive();
         let pos_exact = pos_decode_int(receive);
         (pos_exact.0 as i32, pos_exact.1 as i32, pos_exact.2 as i32)
     }
+    /// set the position of the player (**cannot use it when the server has multi players**)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mcpi_rs::minecraft::Minecraft;
+    ///
+    /// let mc = Minecraft::connect();
+    ///
+    /// mc.clone().mc_set_pos((12.25f64,100.11789f64,13f64));
+    ///
+    /// assert_eq!(mc.clone().mc_get_pos(),(12.25f64,100.11789f64,13f64));
+    /// ```
     pub fn mc_set_pos(self, pos: (f32, f32, f32)) {
         self.connection
             .send(vec!["player.setPos", pos_to_string(pos).as_str()]);
     }
+    /// set the integer position of the player (**cannot use it when the server has multi players**)
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    ///
+    /// let mc = Minecraft::connect();
+    ///
+    /// mc.clone().mc_set_pos_int((10,75,30));
+    ///
+    /// assert_eq!(mc.clone().mc_get_pos_int(),(10,75,30));
+    /// ```
     pub fn mc_set_pos_int(self, pos: (i32, i32, i32)) {
         self.connection
             .send(vec!["player.setTile", pos_to_string(pos).as_str()]);
     }
+    /// set the settings of the world
+    /// # Example
+    /// ```no_run
+    /// use mcpi_rs::prelude::*;
+    ///
+    /// let mc = Minecraft::connect();
+    ///
+    /// mc.mc_world_setting("CommandBlockOutput",true);
+    /// ```
     pub fn mc_world_setting(self, key: impl ToString, val: bool) {
         self.connection.send(vec![
             "player.setting",
@@ -327,5 +371,104 @@ impl Minecraft {
     }
     pub fn auto_flush(self, auto: bool) {
         self.connection.auto_flush(auto);
+    }
+}
+#[derive(Clone)]
+pub struct McDrawing {
+    mc: Minecraft,
+}
+impl McDrawing {
+    /// construct the McDrawing object
+    /// # Example
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// let mcd = McDrawing::new(Minecraft::connect());
+    /// ```
+    pub fn new(mc: Minecraft) -> McDrawing {
+        McDrawing { mc }
+    }
+    /// draw line in minecraft (use Bresenham’s Algorithm)
+    /// see <https://www.geeksforgeeks.org/bresenhams-algorithm-for-3-d-line-drawing/>
+    /// ```
+    /// use mcpi_rs::prelude::*;
+    /// let mc = Minecraft::connect();
+    /// let mcd = McDrawing::new(mc.clone());
+    /// mcd.drawline(Block::from_item(OBSIDIAN),(-1,1,1),(5,3,-1));
+    /// assert_eq!(mc.mc_get_block((0,1,1)),Block::from_item(OBSIDIAN));
+    /// ```
+    pub fn drawline(self, block: Block, mut pos_start: (i32, i32, i32), pos_end: (i32, i32, i32)) {
+        let mut points: Vec<(i32, i32, i32)> = vec![pos_start];
+        let (dx, dy, dz) = (
+            (pos_start.0 - pos_end.0).abs(),
+            (pos_start.1 - pos_end.1).abs(),
+            (pos_start.2 - pos_end.2).abs(),
+        );
+        let xs = if pos_end.0 > pos_start.0 { 1 } else { -1 };
+        let ys = if pos_end.1 > pos_start.1 { 1 } else { -1 };
+        let zs = if pos_end.2 > pos_start.2 { 1 } else { -1 };
+        let (mut p1, mut p2) = (2 * dy - dx, 2 * dz - dx);
+        //Driving axis is X-axis
+        if dx >= dy && dx >= dz {
+            while pos_start.0 != pos_end.0 {
+                pos_start.0 += xs;
+                if p1 >= 0 {
+                    pos_start.1 += ys;
+                    p1 -= 2 * dx;
+                }
+                if p2 >= 0 {
+                    pos_start.2 += zs;
+                    p2 -= 2 * dx;
+                }
+                p1 += 2 * dy;
+                p2 += 2 * dz;
+                points.push(pos_start);
+            }
+        }
+        //Driving axis is Y-axis
+        else if dy >= dx && dy >= dz {
+            p1 = 2 * dx - dy;
+            p2 = 2 * dz - dy;
+            while pos_start.1 != pos_end.1 {
+                pos_start.1 += ys;
+                if p1 >= 0 {
+                    pos_start.0 += xs;
+                    p1 -= 2 * dy;
+                }
+                if p2 >= 0 {
+                    pos_start.2 += zs;
+                    p2 -= 2 * dy;
+                }
+                p1 += 2 * dx;
+                p2 += 2 * dz;
+                points.push(pos_start);
+            }
+        } else {
+            //Driving axis is Z-axis
+            p1 = 2 * dy - dz;
+            p2 = 2 * dx - dz;
+            while pos_start.2 != pos_end.2 {
+                pos_start.2 += zs;
+                if p1 >= 0 {
+                    pos_start.1 += ys;
+                    p1 -= 2 * dz;
+                }
+                if p2 >= 0 {
+                    pos_start.0 += xs;
+                    p2 -= 2 * dz;
+                }
+                p1 += 2 * dy;
+                p2 += 2 * dx;
+                points.push(pos_start);
+            }
+        }
+        for i in points {
+            self.clone().mc.mc_set_block(i, block.clone());
+        }
+    }
+    /// draw circle in minecraft (use midpoint circle algorithm)
+    ///
+    /// **TODO**
+    pub fn drawcircle(self, center_pos: (i32, i32, i32), radius: u32, block: Block) {
+        todo!("drawcircle");
     }
 }
